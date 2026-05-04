@@ -137,7 +137,37 @@
 <div class="toast" id="toast"></div>
 
 <script>
-function showToast(msg, type) {
+// === Сохранение данных в браузере ===
+const STORAGE_KEY = 'gc-amo-agent-config';
+const FIELDS = ['gc-domain', 'gc-key', 'amo-domain', 'amo-key', 'pipeline'];
+
+function saveConfig() {
+  const config = {};
+  FIELDS.forEach(id => {
+    config[id] = document.getElementById(id).value;
+  });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+}
+
+function loadConfig() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (!saved) return;
+  try {
+    const config = JSON.parse(saved);
+    FIELDS.forEach(id => {
+      if (config[id]) document.getElementById(id).value = config[id];
+    });
+  } catch(e) {}
+}
+
+// Загружаем при старте + сохраняем при изменении
+window.addEventListener('DOMContentLoaded', () => {
+  loadConfig();
+  FIELDS.forEach(id => {
+    document.getElementById(id).addEventListener('input', saveConfig);
+  });
+});
+  function showToast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast ' + type + ' show';
