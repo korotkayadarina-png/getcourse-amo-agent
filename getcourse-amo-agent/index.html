@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GetCourse × AmoCRM — AI Агент</title>
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0f0f11; --surface: #18181c; --surface2: #1f1f25;
+    --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
+    --text: #e8e8ed; --muted: #888890;
+    --accent: #7c6fff; --accent2: #4fd1a5; --accent3: #ff6b6b;
+    --mono: 'JetBrains Mono', monospace; --sans: 'Golos Text', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; }
+  .app { display: grid; grid-template-columns: 320px 1fr; grid-template-rows: 60px 1fr; height: 100vh; }
+  .topbar { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; padding: 0 24px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .logo { font-size: 14px; font-weight: 600; letter-spacing: -0.3px; }
+  .logo span { color: var(--accent); }
+  .badge { font-size: 11px; font-family: var(--mono); padding: 3px 8px; border-radius: 4px; background: rgba(124,111,255,0.15); color: var(--accent); border: 1px solid rgba(124,111,255,0.25); }
+  .badge.green { background: rgba(79,209,165,0.12); color: var(--accent2); border-color: rgba(79,209,165,0.2); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent2); margin-left: auto; box-shadow: 0 0 8px var(--accent2); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .dot-label { font-size: 12px; color: var(--muted); }
+  .sidebar { background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+  .section-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+  .field { margin-bottom: 12px; }
+  .field label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; }
+  .field input { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 9px 12px; font-size: 13px; font-family: var(--mono); color: var(--text); outline: none; transition: border-color 0.2s; }
+  .field input:focus { border-color: var(--accent); }
+  .field input::placeholder { color: var(--muted); opacity: 0.5; }
+  .rule { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; background: var(--surface2); border-radius: 8px; border: 1px solid var(--border); margin-bottom: 8px; }
+  .rule-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .rule-icon.purple { background: rgba(124,111,255,0.15); }
+  .rule-icon.teal { background: rgba(79,209,165,0.12); }
+  .rule-icon.red { background: rgba(255,107,107,0.12); }
+  .rule-title { font-size: 12px; font-weight: 500; }
+  .rule-sub { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+  .run-btn { width: 100%; padding: 12px; border-radius: 10px; border: none; background: var(--accent); color: #fff; font-size: 14px; font-weight: 600; font-family: var(--sans); cursor: pointer; transition: opacity 0.2s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .run-btn:hover { opacity: 0.88; }
+  .run-btn:active { transform: scale(0.98); }
+  .run-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .main { display: flex; flex-direction: column; background: var(--bg); }
+  .chat-area { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+  .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--muted); text-align: center; padding: 40px; }
+  .empty-icon { font-size: 48px; margin-bottom: 8px; }
+  .empty-state h2 { font-size: 18px; font-weight: 500; color: var(--text); }
+  .empty-state p { font-size: 13px; line-height: 1.6; max-width: 320px; }
+  .quick-btns { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 8px; }
+  .quick-btn { font-size: 12px; padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border2); background: var(--surface); color: var(--muted); cursor: pointer; transition: all 0.2s; font-family: var(--sans); }
+  .quick-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(124,111,255,0.07); }
+  .msg-wrap { display: flex; gap: 10px; align-items: flex-start; }
+  .msg-wrap.user { flex-direction: row-reverse; }
+  .avatar { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .avatar.bot { background: rgba(124,111,255,0.2); border: 1px solid rgba(124,111,255,0.3); }
+  .avatar.user { background: rgba(79,209,165,0.15); border: 1px solid rgba(79,209,165,0.25); }
+  .bubble { max-width: 75%; padding: 12px 16px; border-radius: 14px; font-size: 14px; line-height: 1.65; }
+  .bubble.bot { background: var(--surface); border: 1px solid var(--border); border-top-left-radius: 4px; }
+  .bubble.user { background: rgba(124,111,255,0.18); border: 1px solid rgba(124,111,255,0.25); border-top-right-radius: 4px; }
+  .bubble.thinking { color: var(--muted); font-style: italic; background: var(--surface2); }
+  .bubble code { font-family: var(--mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px; }
+  .input-bar { padding: 16px 24px; border-top: 1px solid var(--border); background: var(--surface); display: flex; gap: 10px; }
+  .input-bar input { flex: 1; background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; padding: 11px 16px; font-size: 14px; color: var(--text); outline: none; transition: border-color 0.2s; }
+  .input-bar input:focus { border-color: var(--accent); }
+  .input-bar input::placeholder { color: var(--muted); }
+  .send-btn { padding: 0 20px; border-radius: 10px; border: none; background: var(--accent); color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
+  .send-btn:hover { opacity: 0.85; }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+  .toast { position: fixed; bottom: 24px; right: 24px; padding: 12px 18px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 100; transform: translateY(80px); opacity: 0; transition: all 0.3s; pointer-events: none; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: rgba(79,209,165,0.15); border: 1px solid rgba(79,209,165,0.3); color: var(--accent2); }
+  .toast.error { background: rgba(255,107,107,0.12); border: 1px solid rgba(255,107,107,0.25); color: var(--accent3); }
+  @media (max-width: 700px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: 60px auto 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); max-height: 420px; }
+    .bubble { max-width: 90%; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="logo">GetCourse <span>×</span> AmoCRM</div>
+    <span class="badge">AI Агент</span>
+    <span class="badge green">v2.0</span>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+      <div class="dot-label">Агент активен</div>
+      <div class="dot"></div>
+    </div>
+  </header>
+
+  <aside class="sidebar">
+    <div>
+      <div class="section-title">GetCourse</div>
+      <div class="field"><label>Домен школы</label><input id="gc-domain" type="text" placeholder="school.getcourse.ru" /></div>
+      <div class="field"><label>API-ключ</label><input id="gc-key" type="password" placeholder="••••••••" /></div>
+    </div>
+    <div>
+      <div class="section-title">AmoCRM</div>
+      <div class="field"><label>Домен</label><input id="amo-domain" type="text" placeholder="company.amocrm.ru" /></div>
+      <div class="field"><label>API токен</label><input id="amo-key" type="password" placeholder="••••••••" /></div>
+      <div class="field"><label>Название воронки</label><input id="pipeline" type="text" placeholder="Онлайн-школа" /></div>
+    </div>
+    <div>
+      <div class="section-title">Правила автоматизации</div>
+      <div class="rule"><div class="rule-icon purple">📦</div><div><div class="rule-title">Новый заказ</div><div class="rule-sub">GetCourse → создать сделку + контакт в AmoCRM</div></div></div>
+      <div class="rule"><div class="rule-icon teal">💳</div><div><div class="rule-title">Оплата получена</div><div class="rule-sub">Перевести сделку на этап «Оплачено»</div></div></div>
+      <div class="rule"><div class="rule-icon red">👤</div><div><div class="rule-title">Новый пользователь</div><div class="rule-sub">Создать или обновить контакт в AmoCRM</div></div></div>
+    </div>
+    <button class="run-btn" onclick="runAgent()" id="run-btn">▶ Запустить агент</button>
+  </aside>
+
+  <main class="main">
+    <div class="chat-area" id="chat">
+      <div class="empty-state" id="empty">
+        <div class="empty-icon">🤖</div>
+        <h2>AI Агент интеграции</h2>
+        <p>Заполните настройки и нажмите «Запустить» — или задайте вопрос прямо сейчас.</p>
+        <div class="quick-btns">
+          <button class="quick-btn" onclick="ask('Где взять API-ключ GetCourse?')">Где взять API-ключ?</button>
+          <button class="quick-btn" onclick="ask('Как настроить webhook в GetCourse?')">Как настроить webhook?</button>
+          <button class="quick-btn" onclick="ask('Как создать воронку в AmoCRM?')">Как создать воронку?</button>
+          <button class="quick-btn" onclick="ask('Объясни как работает интеграция')">Как работает интеграция?</button>
+        </div>
+      </div>
+    </div>
+    <div class="input-bar">
+      <input id="user-input" type="text" placeholder="Задайте вопрос агенту..." onkeydown="if(event.key==='Enter')sendMsg()" />
+      <button class="send-btn" onclick="sendMsg()">Отправить</button>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.className = 'toast', 3000);
+}
+function removeEmpty() { const e = document.getElementById('empty'); if (e) e.remove(); }
+function addMsg(text, role) {
+  removeEmpty();
+  const chat = document.getElementById('chat');
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-wrap ' + role;
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar ' + (role === 'user' ? 'user' : 'bot');
+  avatar.textContent = role === 'user' ? '👤' : '🤖';
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble ' + role;
+  bubble.innerHTML = text.replace(/\n/g, '<br>').replace(/`([^`]+)`/g, '<code>$1</code>');
+  wrap.appendChild(avatar);
+  wrap.appendChild(bubble);
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+  return bubble;
+}
+function getContext() {
+  const gcDomain = document.getElementById('gc-domain').value || 'не указан';
+  const amoDomain = document.getElementById('amo-domain').value || 'не указан';
+  const pipeline = document.getElementById('pipeline').value || 'не указана';
+  return `Ты — AI-агент интеграции GetCourse и AmoCRM. Помогаешь настроить автоматическую передачу заказов, контактов и статусов сделок.
+
+Конфигурация:
+- GetCourse домен: ${gcDomain}
+- AmoCRM домен: ${amoDomain}
+- Воронка: ${pipeline}
+
+Правила:
+1. Новый заказ в GetCourse → создать сделку + контакт в AmoCRM
+2. Оплата → перевести сделку на этап "Оплачено"
+3. Новый пользователь → создать/обновить контакт в AmoCRM
+
+Отвечай коротко, конкретно, по-русски. Используй технические детали (API endpoints, параметры webhook) когда уместно.`;
+}
+async function callClaude(userText) {
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      system: getContext(),
+      messages: [{ role: 'user', content: userText }]
+    })
+  });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message || data.error);
+  return data.content?.find(b => b.type === 'text')?.text || 'Нет ответа.';
+}
+async function sendMsg() {
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  await ask(text);
+}
+async function ask(text) {
+  addMsg(text, 'user');
+  const thinking = addMsg('Думаю...', 'thinking');
+  try {
+    const answer = await callClaude(text);
+    thinking.className = 'bubble bot';
+    thinking.innerHTML = answer.replace(/\n/g, '<br>').replace(/`([^`]+)`/g, '<code>$1</code>');
+  } catch(e) {
+    thinking.className = 'bubble bot';
+    thinking.textContent = 'Ошибка: ' + e.message;
+    showToast('Ошибка запроса', 'error');
+  }
+}
+async function runAgent() {
+  const gcDomain = document.getElementById('gc-domain').value.trim();
+  const gcKey = document.getElementById('gc-key').value.trim();
+  const amoDomain = document.getElementById('amo-domain').value.trim();
+  const amoKey = document.getElementById('amo-key').value.trim();
+  const pipeline = document.getElementById('pipeline').value.trim();
+  if (!gcDomain || !gcKey || !amoDomain || !amoKey) {
+    showToast('Заполните все поля настройки', 'error');
+    return;
+  }
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Анализирую...';
+  const prompt = `Пользователь хочет настроить интеграцию GetCourse ↔ AmoCRM:
+- GetCourse: ${gcDomain}
+- AmoCRM: ${amoDomain}
+- Воронка: ${pipeline || 'не указана'}
+
+Составь пошаговый план настройки:
+1. Настройка webhook в GetCourse
+2. Подготовка AmoCRM (этапы воронки, поля)
+3. Как проверить что всё работает
+4. Типичные ошибки
+
+Будь конкретным, используй технические детали.`;
+  addMsg('Запускаю агент интеграции...', 'user');
+  const thinking = addMsg('Анализирую конфигурацию и составляю план...', 'thinking');
+  try {
+    const answer = await callClaude(prompt);
+    thinking.className = 'bubble bot';
+    thinking.innerHTML = answer.replace(/\n/g, '<br>').replace(/`([^`]+)`/g, '<code>$1</code>');
+    showToast('План готов!', 'success');
+  } catch(e) {
+    thinking.className = 'bubble bot';
+    thinking.textContent = 'Ошибка: ' + e.message;
+    showToast('Ошибка запроса', 'error');
+  }
+  btn.disabled = false;
+  btn.textContent = '▶ Запустить агент';
+}
+</script>
+</body>
+</html>
